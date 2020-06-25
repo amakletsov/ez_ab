@@ -8,12 +8,11 @@ module EzAb
     # Allow the user to manually override their variant
     if params[key].present?
       valid_opts = variations(experiment).keys
-      variant = params[key].one_of(valid_opts)
-      no_cookie = true
+      variant = params[key] if valid_opts.include?(params[key])
     end
 
     # Unless overridden, try to use their cookie
-    #variant ||= cookies[key]
+    variant ||= cookies[key]
     
     # Build a menu of weighted options and pick one
     if variant.blank?
