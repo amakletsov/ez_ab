@@ -17,7 +17,7 @@ module EzAb
     # Build a menu of weighted options and pick one
     if variant.blank?
       variant = menu(experiment).sample
-      cookies.permanent[key] = variant unless no_cookie
+      cookies[key] = { value: variant, expires: 30.days }
     end
     
     return variant
