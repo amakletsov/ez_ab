@@ -1,4 +1,4 @@
-# EzAb - A glorified RAND controller that also does some cookie stuff.
+# EzAb
 
 EzAb is a highly performant AB testing gem.
 
