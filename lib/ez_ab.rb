@@ -1,9 +1,12 @@
 require "ez_ab/version"
+require "redis"
 
 module EzAb  
-  def ezab_test(experiment)
+  def ezab_test(experiment, user_identifier=nil)
     key = "ezab_#{experiment}"
+    userkey = "#{key}_#{user_identifier}"
     variant = nil
+    expire_in_days = 30
     
     # Allow the user to manually override their variant
     if params[key].present?
@@ -11,13 +14,20 @@ module EzAb
       variant = params[key] if valid_opts.include?(params[key])
     end
 
-    # Unless overridden, try to use their cookie
-    variant ||= cookies[key]
-    
+    # Check if we have a sticky variant for the user
+    variant ||= user_identifier ? redis.get(userkey) : cookies[key]
+
     # Build a menu of weighted options and pick one
     if variant.blank?
       variant = menu(experiment).sample
-      cookies[key] = { value: variant, expires: 30.days }
+      
+      # Set an expiration on the sticky variant
+      if user_identifier
+        redis.set(userkey, variant)
+        redis.expire(userkey, expire_in_days * 86_400)
+      else
+        cookies[key] = { value: variant, expires: expire_in_days.days }
+      end
     end
     
     return variant
@@ -39,6 +49,10 @@ module EzAb
     menu = []
     variations(experiment).each { |k, v| v.times { menu << k } }
     menu
+  end
+
+  def redis
+    @ez_redis ||= Redis.new(host: ENV["REDIS_HOST"], port: ENV["REDIS_PORT"])
   end
 
   class Railtie < Rails::Railtie
