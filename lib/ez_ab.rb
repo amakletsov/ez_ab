@@ -8,7 +8,7 @@ module EzAb
     user_identifier = options[:user_identifier]
     userkey = "#{key}_#{user_identifier}"
     expire_in = options[:expire_in] || 30 # days
-    sticky = options[:sticky] || true
+    sticky = options[:sticky] == false ? false : true
     
     # Allow the user to manually override their variant
     if params[key].present?
