@@ -2,11 +2,13 @@ require "ez_ab/version"
 require "redis"
 
 module EzAb  
-  def ezab_test(experiment, user_identifier=nil)
-    key = "ezab_#{experiment}"
-    userkey = "#{key}_#{user_identifier}"
+  def ezab_test(experiment, options = {})
     variant = nil
-    expire_in_days = 30
+    key = "ezab_#{experiment}"
+    user_identifier = options[:user_identifier]
+    userkey = "#{key}_#{user_identifier}"
+    expire_in = options[:expire_in] || 30 # days
+    sticky = options[:sticky] || true
     
     # Allow the user to manually override their variant
     if params[key].present?
@@ -15,18 +17,22 @@ module EzAb
     end
 
     # Check if we have a sticky variant for the user
-    variant ||= user_identifier ? redis.get(userkey) : cookies[key]
+    variant ||= if sticky
+      user_identifier ? redis.get(userkey) : cookies[key]
+    end
 
     # Build a menu of weighted options and pick one
     if variant.blank?
       variant = menu(experiment).sample
       
-      # Set an expiration on the sticky variant
-      if user_identifier
-        redis.set(userkey, variant)
-        redis.expire(userkey, expire_in_days * 86_400)
-      else
-        cookies[key] = { value: variant, expires: expire_in_days.days }
+      # Set the sticky variant
+      if sticky
+        if user_identifier
+          redis.set(userkey, variant)
+          redis.expire(userkey, expire_in * 86_400)
+        else
+          cookies[key] = { value: variant, expires: expire_in.days }
+        end
       end
     end
     

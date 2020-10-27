@@ -39,14 +39,19 @@ experiments:
 
 ## Usage
 
-To get a variant:
-
 ```ruby
+# Get a variant + sticky to cookies
 @checkout_design = ezab_test(:checkout_design)
-```
 
-To force a variant:
+# Get a variant + custom cookie TTL (in days)
+@checkout_design = ezab_test(:checkout_design, expire_in: 7)
 
-```
+# Get a variant + sticky to user identifier (calls redis)
+@checkout_design = ezab_test(:checkout_design, user_identifier: "coolguy")
+
+# Get a fresh variant each time, no sticky
+@checkout_design = ezab_test(:checkout_design, sticky: false)
+
+# Force a variant via browser (bypass sticky)
 https://my-awesome-site.org/checkout?ezab_checkout_design=control
 ```
