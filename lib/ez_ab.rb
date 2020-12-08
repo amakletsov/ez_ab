@@ -9,16 +9,16 @@ module EzAb
     userkey = "#{key}_#{user_identifier}"
     expire_in = options[:expire_in] || 30 # days
     sticky = options[:sticky] == false ? false : true
-    
+
     # Allow the user to manually override their variant
-    if params[key].present?
-      valid_opts = variations(experiment).keys
-      variant = params[key] if valid_opts.include?(params[key])
+    variant ||= if params[key].present?
+      params[key] if valid_variant?(experiment, params[key])
     end
 
     # Check if we have a sticky variant for the user
     variant ||= if sticky
-      user_identifier ? redis.get(userkey) : cookies[key]
+      sticky_val = user_identifier ? redis.get(userkey) : cookies[key]
+      sticky_val if valid_variant?(experiment, sticky_val)
     end
 
     # Build a menu of weighted options and pick one
@@ -49,6 +49,11 @@ module EzAb
 
   def variations(experiment)
     read_config["experiments"][experiment]["variations"]
+  end
+
+  def valid_variant?(experiment, variant)
+    valid_opts = variations(experiment).keys
+    valid_opts.include?(variant)
   end
 
   def menu(experiment)
